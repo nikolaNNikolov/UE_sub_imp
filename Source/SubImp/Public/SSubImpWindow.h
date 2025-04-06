@@ -12,6 +12,14 @@ static void CloseSubImpWindow();
 #define OPEN_FILE_DIALOG_FILE_TYPES FString("Subtitles|*.srt")
 #define OPEN_FILE_DIALOG_FLAGS 0
 
+enum ESubImpLineType
+{
+	EmptyLine		= 0,
+	SubtitleIndex	= 1,
+	SubtitleTime	= 2,
+	SubtitleText	= 3
+};
+
 class SUBIMP_API SSubImpWindow : public SCompoundWidget
 {
 public:

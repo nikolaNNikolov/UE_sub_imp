@@ -159,31 +159,39 @@ FReply SSubImpWindow::OpenSRTFilePickerWindow()
 		FSubtitleCue SubtitleCue = FSubtitleCue();
 		
 		FFileHelper::LoadFileToStringArray(LoadedText, *FilePath);
-
-		for (int i = 0; i <= LoadedText.Num() - 1; i++)
+		const int LastIndex = LoadedText.Num() - 1;
+		
+		for (int i = 0; i <= LastIndex; i++)
 		{
 			FString Line = LoadedText[i];
+			ESubImpLineType LineType = ESubImpLineType::EmptyLine;
+			
 			if(!Line.IsEmpty())
 			{
+				bool bPushSubtitleCue = false;
+				
 				if(Line.IsNumeric())
+					LineType = ESubImpLineType::SubtitleIndex;
+				
+				if(Line.Contains(SUBTITLE_TIME_DELIMITER))
+					LineType = ESubImpLineType::SubtitleTime;
+
+				if(LineType == ESubImpLineType::EmptyLine)
+					LineType = ESubImpLineType::SubtitleText;
+
+				switch(LineType)
 				{
-					// push generated subtitle cue into the wave file
+				case ESubImpLineType::SubtitleIndex:
+				{
 					const int NewSubtitleIndex = FCString::Atoi(*Line);
 					if (NewSubtitleIndex > SubtitleIndex)
 					{
 						SubtitleIndex = NewSubtitleIndex;
-
-						// Subtitle Cue is valid, push
-						if(!SubtitleCue.Text.IsEmpty() && SubtitleCue.Time >= 0.0f)
-						{
-							GeneratedSubtitleInfo.Add(SubtitleCue);
-							SubtitleCue = FSubtitleCue();	
-						}
+						bPushSubtitleCue = true;
 					}
-					continue;
+					break;
 				}
-				
-				if(Line.Contains(SUBTITLE_TIME_DELIMITER))
+				case ESubImpLineType::SubtitleTime:
 				{
 					FString LeftString, RightString;
 					Line.Split(SUBTITLE_TIME_DELIMITER, &LeftString, &RightString);
@@ -195,27 +203,44 @@ FReply SSubImpWindow::OpenSRTFilePickerWindow()
 						FSubtitleCue EmptySubtitleCue = FSubtitleCue();
 						EmptySubtitleCue.Text = EndSubTag;
 						EmptySubtitleCue.Time = CachedSubtitleEndTime;
-						
+					
 						GeneratedSubtitleInfo.Add(EmptySubtitleCue);
 					}
-						
+					
 					SubtitleCue.Time = CurrentSubtitleStartTime;
 					CachedSubtitleEndTime = GetTotalSecondsFromTimespanString(RightString);
-					
-					continue;
+					break;
+				}
+				case ESubImpLineType::SubtitleText:
+				{
+					if(SubtitleCue.Text.IsEmpty())
+					{
+						SubtitleCue.Text = FText::FromString(Line);
+					}
+					else
+					{
+						FString TextFormat = "{0}" + FString(LINE_TERMINATOR) + "{1}";
+						const FText CurrentSubtitleCue = SubtitleCue.Text;
+						const FText NewSubtitleCue = FText::FromString(Line);
+						SubtitleCue.Text = FText::Format(FText::FromString(TextFormat), CurrentSubtitleCue, NewSubtitleCue);
+					}
+					break;
+				}
+				default:
+					break;
 				}
 
-				//todo: handle case with loc string
-				if(SubtitleCue.Text.IsEmpty())
+				// Force subtitle update, to ensure the final subs go into the array
+				if(i == LastIndex)
+					bPushSubtitleCue = true;
+
+				if(bPushSubtitleCue)
 				{
-					SubtitleCue.Text = FText::FromString(Line);
-				}
-				else
-				{
-					FString TextFormat = "{0}" + FString(LINE_TERMINATOR) + "{1}";
-					const FText CurrentSubtitleCue = SubtitleCue.Text;
-					const FText NewSubtitleCue = FText::FromString(Line);
-					SubtitleCue.Text = FText::Format(FText::FromString(TextFormat), CurrentSubtitleCue, NewSubtitleCue);
+					if(!SubtitleCue.Text.IsEmpty() && SubtitleCue.Time >= 0.0f)
+					{
+						GeneratedSubtitleInfo.Add(SubtitleCue);
+						SubtitleCue = FSubtitleCue();
+					}
 				}
 			}
 		}
@@ -243,6 +268,14 @@ FReply SSubImpWindow::DoTheSubImp()
 	ResetSubImp();
 	
 	return FReply::Handled();
+}
+
+void SSubImpWindow::ResetSubImp()
+{
+	LoadedFileString = "Choose File...";
+	GeneratedSubtitleInfo.Empty();
+	SelectedSoundWave = nullptr;
+	SelectedSoundWavePath = FString();
 }
 
 void SSubImpWindow::OnSoundWaveSelected(const FAssetData& InSoundWave)
@@ -274,14 +307,6 @@ FText SSubImpWindow::GetLoadedFileStringAsText() const
 FString SSubImpWindow::GetSelectedSoundWavePath() const
 {
 	return SelectedSoundWavePath;
-}
-
-void SSubImpWindow::ResetSubImp()
-{
-	LoadedFileString = "Choose File...";
-	GeneratedSubtitleInfo.Empty();
-	SelectedSoundWave = nullptr;
-	SelectedSoundWavePath = FString();
 }
 
 float SSubImpWindow::GetTotalSecondsFromTimespanString(const FString& TimespanString) const
