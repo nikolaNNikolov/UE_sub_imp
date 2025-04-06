@@ -6,7 +6,7 @@
 
 void FSubImpCommands::RegisterCommands()
 {
-	UI_COMMAND(PluginAction, "SubImp", "Execute SubImp action", EUserInterfaceActionType::Button, FInputChord());
+	UI_COMMAND(PluginAction, "sub-imp", "Open the sub-imp Subtitle Importer window.", EUserInterfaceActionType::Button, FInputChord());
 }
 
 #undef LOCTEXT_NAMESPACE

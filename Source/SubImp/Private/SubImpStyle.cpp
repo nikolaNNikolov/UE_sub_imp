@@ -43,7 +43,8 @@ TSharedRef< FSlateStyleSet > FSubImpStyle::Create()
 	TSharedRef< FSlateStyleSet > Style = MakeShareable(new FSlateStyleSet("SubImpStyle"));
 	Style->SetContentRoot(IPluginManager::Get().FindPlugin("SubImp")->GetBaseDir() / TEXT("Resources"));
 
-	Style->Set("SubImp.PluginAction", new IMAGE_BRUSH_SVG(TEXT("PlaceholderButtonIcon"), Icon20x20));
+	Style->Set("sub-imp.PluginAction", new IMAGE_BRUSH_SVG(TEXT("PlaceholderButtonIcon"), Icon20x20));
+	Style->Set("sub-imp.PluginAction.Small", new IMAGE_BRUSH_SVG(TEXT("PlaceholderButtonIcon"), Icon16x16));
 	return Style;
 }
 

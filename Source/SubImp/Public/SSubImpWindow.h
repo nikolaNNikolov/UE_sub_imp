@@ -45,6 +45,7 @@ protected:
 	bool IsLoadedPathStringValid() const;
 	
 	FText GetLoadedFileStringAsText() const;
+	FText GetLoadedFileTooltipText() const;
 
 	void OnSoundWaveSelected(const FAssetData& InSoundWave);
 	FString GetSelectedSoundWavePath() const;

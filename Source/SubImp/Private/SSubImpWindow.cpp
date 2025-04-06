@@ -10,6 +10,7 @@
 #include "Subsystems/EditorAssetSubsystem.h"
 #include "ThumbnailRendering/ThumbnailManager.h"
 #include "Widgets/Input/SNumericEntryBox.h"
+#include "Widgets/Layout/SScaleBox.h"
 #include "Widgets/Layout/SWidgetSwitcher.h"
 
 
@@ -36,50 +37,52 @@ void SSubImpWindow::Construct(const FArguments& InArgs)
 		.VAlign(VAlign_Top)
 		[
 			SNew(STextBlock)
-			.Font(FAppStyle::Get().GetFontStyle("NormalFont"))
+			.Font(FAppStyle::Get().GetFontStyle("NormalFontBold"))
 			.Justification(ETextJustify::Left)
 			.Text(FText::FromString("Select .srt file: "))
+			.ToolTipText(FText::FromString("The .srt file from which to generate the Sound Wave subtitles."))
 		]
 
 		+SVerticalBox::Slot()
 		.AutoHeight()
 		.Padding(0.0f, 5.0f)
-		.HAlign(HAlign_Left)
+		.HAlign(HAlign_Fill)
 		.VAlign(VAlign_Top)
 		[
 			SNew(SBox)
 			.WidthOverride(350.0f)
 			[
-				SNew(SVerticalBox)
-				+SVerticalBox::Slot()
-				.HAlign(HAlign_Fill)
+				SNew(SHorizontalBox)
+				+SHorizontalBox::Slot()
+				.FillWidth(1.0f)
 				[
 					SNew(SEditableTextBox)
 					.IsReadOnly(true)
 					.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
 					.Text(this, &SSubImpWindow::GetLoadedFileStringAsText)
+					.ToolTipText(this, &SSubImpWindow::GetLoadedFileTooltipText)
 				]
-				+SVerticalBox::Slot()
-				.HAlign(HAlign_Left)
+				+SHorizontalBox::Slot()
+				.HAlign(HAlign_Right)
+				.Padding(10.0f, 0.0f, 0.0f, 0.0f)
+				.AutoWidth()
 				[
 					SNew(SBox)
-					.WidthOverride(75.0f)
-					.VAlign(VAlign_Fill)
-					.Padding(0.0f, 5.0f, 0.0f, 0.0f)
+					.VAlign(VAlign_Center)
+					.ToolTipText(FText::FromString("Browse"))
 					[
 						SNew(SButton)
 						.VAlign(VAlign_Fill)
 						.OnClicked(this, &SSubImpWindow::OpenSRTFilePickerWindow)
+						.ContentPadding(FMargin(0.0f, 4.0f))
+						.Content()
 						[
-							SNew(STextBlock)
-							.Font(FAppStyle::Get().GetFontStyle("NormalFont"))
-							.Justification(ETextJustify::Left)
-							.Text(FText::FromString("Browse"))
+							SNew(SImage)
+							.Image(FAppStyle::Get().GetBrush("Icons.Search"))
 						]
 					]
 				]
 			]
-			
 		]
 
 		+SVerticalBox::Slot()
@@ -89,9 +92,11 @@ void SSubImpWindow::Construct(const FArguments& InArgs)
 		.VAlign(VAlign_Top)
 		[
 			SNew(STextBlock)
-			.Font(FAppStyle::Get().GetFontStyle("NormalFont"))
+			.Font(FAppStyle::Get().GetFontStyle("NormalFontBold"))
 			.Justification(ETextJustify::Left)
 			.Text(FText::FromString("Select Sound Wave file: "))
+			.ToolTipText(FText::FromString("The Sound Wave whose subtitles to override."))
+				
 		]
 		
 		+SVerticalBox::Slot()
@@ -134,20 +139,21 @@ void SSubImpWindow::Construct(const FArguments& InArgs)
 				SNew(STextBlock)
 				.Font(FAppStyle::Get().GetFontStyle("NormalFont"))
 				.Justification(ETextJustify::Left)
-				.Text(FText::FromString("Assign subtitles to String Table keys?"))
+				.Text(FText::FromString("Assign subtitles as String Table keys?"))
+				.ToolTipText(FText::FromString("Should the subtitles be treated as keys defined in a String Table?"))
 			]
 		]
 
 		+SVerticalBox::Slot()
 		.AutoHeight()
-		.Padding(0.0f, 5.0f)
+		.Padding(0.0f, 0.0f)
 		.HAlign(HAlign_Fill)
 		.VAlign(VAlign_Top)
 		[
 			SNew(SBorder)
 			.Visibility(this, &SSubImpWindow::GetStringTableSettingsVisibility)
 			.BorderImage(FAppStyle::Get().GetBrush("Brushes.Background"))
-			.Padding(2.0f, 5.0f, 2.0f, 5.0f)
+			.Padding(5.0f, 0.0f, 5.0f, 5.0f)
 			[
 				SNew(SVerticalBox)
 
@@ -158,9 +164,10 @@ void SSubImpWindow::Construct(const FArguments& InArgs)
 				.VAlign(VAlign_Top)
 				[
 					SNew(STextBlock)
-					.Font(FAppStyle::Get().GetFontStyle("NormalFont"))
+					.Font(FAppStyle::Get().GetFontStyle("NormalFontBold"))
 					.Justification(ETextJustify::Left)
 					.Text(FText::FromString("Select String Table: "))
+					.ToolTipText(FText::FromString("The String Table from which to get the keys."))
 				]
 					
 				+SVerticalBox::Slot()
@@ -198,12 +205,13 @@ void SSubImpWindow::Construct(const FArguments& InArgs)
 				.Font(FAppStyle::Get().GetFontStyle("NormalFont"))
 				.Justification(ETextJustify::Left)
 				.Text(FText::FromString("Apply End Sub Tag?"))
+				.ToolTipText(FText::FromString("End Sub Tag adds a new subtitle entry (as a string tag) to differentiate when a subtitle ends. Tag is only applied if the the time difference between two subtitles exceeds the given timeout."))
 			]
 		]
 		
 		+SVerticalBox::Slot()
 		.AutoHeight()
-		.Padding(0.0f, 5.0f)
+		.Padding(0.0f, 0.0f)
 		.HAlign(HAlign_Fill)
 		.VAlign(VAlign_Top)
 		[
@@ -218,7 +226,25 @@ void SSubImpWindow::Construct(const FArguments& InArgs)
 				.Padding(0.0f, 5.0f)
 				.HAlign(HAlign_Fill)
 				.VAlign(VAlign_Top)
+				[
+					SNew(STextBlock)
+					.Font(FAppStyle::Get().GetFontStyle("NormalFontBold"))
+					.Justification(ETextJustify::Left)
+					.Text(FText::FromString("End Sub Tag: "))
+					.ToolTipText(FText::FromString("The string tag to apply as a subtitle cue entry."))
+				]
 
+				+SVerticalBox::Slot()
+				.Padding(0.0f, 3.0f)
+				[
+					SNew(SEditableTextBox)
+					.IsReadOnly(false)
+					.HintText(FText::FromString("End Sub Tag"))
+					.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+					.Text(this, &SSubImpWindow::GetEndSubTag)
+					.OnTextCommitted(this, &SSubImpWindow::EndSubTagTextBlockCommitted)
+				]
+				
 				+SVerticalBox::Slot()
 				.AutoHeight()
 				.Padding(0.0f, 5.0f)
@@ -226,41 +252,20 @@ void SSubImpWindow::Construct(const FArguments& InArgs)
 				.VAlign(VAlign_Top)
 				[
 					SNew(STextBlock)
-					.Font(FAppStyle::Get().GetFontStyle("NormalFont"))
+					.Font(FAppStyle::Get().GetFontStyle("NormalFontBold"))
 					.Justification(ETextJustify::Left)
-					.Text(FText::FromString("Sub Imp Tag Timeout (in seconds): "))
-					.ToolTipText(FText::FromString("Description"))
+					.Text(FText::FromString("End Sub Tag Timeout (in seconds): "))
+					.ToolTipText(FText::FromString("The timeout between two subtitles that needs to be exceeded in order for the tag to be applied."))
 				]
 
 				+SVerticalBox::Slot()
+				.Padding(0.0f, 3.0f)
 				[
 					SNew(SSpinBox<float>)
 					.MinSliderValue(0.5f)
 					.Font(FAppStyle::Get().GetFontStyle("NormalFont"))
 					.Value(this, &SSubImpWindow::GetEndSubTagTimeout)
 					.OnValueCommitted(this, &SSubImpWindow::EndSubTagTimeoutNumericCommitted)
-				]
-
-				+SVerticalBox::Slot()
-				.AutoHeight()
-				.Padding(0.0f, 5.0f)
-				.HAlign(HAlign_Fill)
-				.VAlign(VAlign_Top)
-				[
-					SNew(STextBlock)
-					.Font(FAppStyle::Get().GetFontStyle("NormalFont"))
-					.Justification(ETextJustify::Left)
-					.Text(FText::FromString("Sub Imp Tag Type: "))
-					.ToolTipText(FText::FromString("Description"))
-				]
-
-				+SVerticalBox::Slot()
-				[
-					SNew(SEditableTextBox)
-					.IsReadOnly(false)
-					.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
-					.Text(this, &SSubImpWindow::GetEndSubTag)
-					.OnTextCommitted(this, &SSubImpWindow::EndSubTagTextBlockCommitted)
 				]
 			]
 		]
@@ -271,10 +276,23 @@ void SSubImpWindow::Construct(const FArguments& InArgs)
 		.HAlign(HAlign_Fill)
 		.VAlign(VAlign_Top)
 		[
-			SNew(SButton)
-			.Text(FText::FromString("GENERATE SUBTITLES"))
-			.IsEnabled(this, &SSubImpWindow::GetIsGenerateButtonEnabled)
-			.OnClicked(this, &SSubImpWindow::DoTheSubImp)
+			SNew(SBox)
+			.HeightOverride(40.0f)
+			[
+				SNew(SButton)
+				.IsEnabled(this, &SSubImpWindow::GetIsGenerateButtonEnabled)
+				.OnClicked(this, &SSubImpWindow::DoTheSubImp)
+				[
+					SNew(SBox)
+					.VAlign(VAlign_Center)
+					[
+						SNew(STextBlock)
+						.Text(FText::FromString("sub-imp Generate Subtitles"))
+						.Font(FAppStyle::Get().GetFontStyle("NormalFontBold"))
+						.Justification(ETextJustify::Center)
+					]
+				]
+			]
 		]
 	];
 }
@@ -397,6 +415,7 @@ void SSubImpWindow::GenerateSubtitleCueArrayFromReadFile()
 				const float CurrentSubtitleStartTime = GetTotalSecondsFromTimespanString(LeftString);
 
 				if (bApplyEndSubTag
+				&& !GetEndSubTag().IsEmpty()
 				&& (CurrentSubtitleStartTime - CachedSubtitleEndTime) >= GetEndSubTagTimeout())
 				{
 					FSubtitleCue EmptySubtitleCue = FSubtitleCue();
@@ -491,6 +510,14 @@ bool SSubImpWindow::IsLoadedPathStringValid() const
 FText SSubImpWindow::GetLoadedFileStringAsText() const
 {
 	return FText::FromString(LoadedFileString);
+}
+
+FText SSubImpWindow::GetLoadedFileTooltipText() const
+{
+	if(IsLoadedPathStringValid())
+		return GetLoadedFileStringAsText();
+
+	return FText::GetEmpty();
 }
 
 FString SSubImpWindow::GetSelectedSoundWavePath() const
@@ -624,7 +651,7 @@ void OpenSubImpWindow(TSharedPtr<SWindow> ParentWindow)
 		.ScreenPosition(SpawnLocation)
 		.AutoCenter(EAutoCenter::None)
 		.SupportsMaximize(false)
-		.SupportsMinimize(false)
+		.SupportsMinimize(true)
 		.SizingRule(ESizingRule::Autosized)
 		.ClientSize(WINDOW_SIZE)
 		.HasCloseButton(true)
