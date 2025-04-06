@@ -1,10 +1,13 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "SubImp.h"
+
+#include "SSubImpWindow.h"
 #include "SubImpStyle.h"
 #include "SubImpCommands.h"
 #include "Misc/MessageDialog.h"
 #include "ToolMenus.h"
+#include "Interfaces/IMainFrameModule.h"
 
 static const FName SubImpTabName("SubImp");
 
@@ -34,6 +37,8 @@ void FSubImpModule::ShutdownModule()
 	// This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
 	// we call this function before unloading the module.
 
+	CloseSubImpWindow();
+
 	UToolMenus::UnRegisterStartupCallback(this);
 
 	UToolMenus::UnregisterOwner(this);
@@ -45,13 +50,7 @@ void FSubImpModule::ShutdownModule()
 
 void FSubImpModule::PluginButtonClicked()
 {
-	// Put your "OnButtonClicked" stuff here
-	FText DialogText = FText::Format(
-							LOCTEXT("PluginButtonDialogText", "Add code to {0} in {1} to override this button's actions"),
-							FText::FromString(TEXT("FSubImpModule::PluginButtonClicked()")),
-							FText::FromString(TEXT("SubImp.cpp"))
-					   );
-	FMessageDialog::Open(EAppMsgType::Ok, DialogText);
+	OpenSubImpWindow(FModuleManager::GetModuleChecked<IMainFrameModule>(TEXT("MainFrame")).GetParentWindow());
 }
 
 void FSubImpModule::RegisterMenus()

@@ -43,6 +43,8 @@ public class SubImp : ModuleRules
 				"Engine",
 				"Slate",
 				"SlateCore",
+				"PropertyEditor",
+				"DesktopPlatform"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);
