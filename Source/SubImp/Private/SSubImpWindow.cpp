@@ -4,9 +4,13 @@
 #include "DesktopPlatformModule.h"
 #include "IDesktopPlatform.h"
 #include "PropertyCustomizationHelpers.h"
+#include "Components/SlateWrapperTypes.h"
 #include "Interfaces/IMainFrameModule.h"
+#include "Internationalization/StringTable.h"
 #include "Subsystems/EditorAssetSubsystem.h"
 #include "ThumbnailRendering/ThumbnailManager.h"
+#include "Widgets/Input/SNumericEntryBox.h"
+#include "Widgets/Layout/SWidgetSwitcher.h"
 
 
 class IMainFrameModule;
@@ -24,7 +28,6 @@ void SSubImpWindow::Construct(const FArguments& InArgs)
 	ChildSlot
 	[
 		SNew(SVerticalBox)
-
 		
 		+SVerticalBox::Slot()
 		.AutoHeight()
@@ -69,7 +72,7 @@ void SSubImpWindow::Construct(const FArguments& InArgs)
 						.OnClicked(this, &SSubImpWindow::OpenSRTFilePickerWindow)
 						[
 							SNew(STextBlock)
-							.Font(FAppStyle::Get().GetFontStyle("SmallFont"))
+							.Font(FAppStyle::Get().GetFontStyle("NormalFont"))
 							.Justification(ETextJustify::Left)
 							.Text(FText::FromString("Browse"))
 						]
@@ -114,6 +117,157 @@ void SSubImpWindow::Construct(const FArguments& InArgs)
 		+SVerticalBox::Slot()
 		.AutoHeight()
 		.Padding(0.0f, 5.0f)
+		.HAlign(HAlign_Left)
+		.VAlign(VAlign_Top)
+		[
+			SNew(SHorizontalBox)
+			+SHorizontalBox::Slot()
+			.AutoWidth()
+			[
+				SNew(SCheckBox)
+				.OnCheckStateChanged(this, &SSubImpWindow::OnStringTableCheckboxStateChanged)
+				.IsChecked(this, &SSubImpWindow::GetStringTableCheckBoxState)
+			]
+			+SHorizontalBox::Slot()
+			.FillWidth(1.0f)
+			[
+				SNew(STextBlock)
+				.Font(FAppStyle::Get().GetFontStyle("NormalFont"))
+				.Justification(ETextJustify::Left)
+				.Text(FText::FromString("Assign subtitles to String Table keys?"))
+			]
+		]
+
+		+SVerticalBox::Slot()
+		.AutoHeight()
+		.Padding(0.0f, 5.0f)
+		.HAlign(HAlign_Fill)
+		.VAlign(VAlign_Top)
+		[
+			SNew(SBorder)
+			.Visibility(this, &SSubImpWindow::GetStringTableSettingsVisibility)
+			.BorderImage(FAppStyle::Get().GetBrush("Brushes.Background"))
+			.Padding(2.0f, 5.0f, 2.0f, 5.0f)
+			[
+				SNew(SVerticalBox)
+
+				+SVerticalBox::Slot()
+				.AutoHeight()
+				.Padding(0.0f, 5.0f)
+				.HAlign(HAlign_Fill)
+				.VAlign(VAlign_Top)
+				[
+					SNew(STextBlock)
+					.Font(FAppStyle::Get().GetFontStyle("NormalFont"))
+					.Justification(ETextJustify::Left)
+					.Text(FText::FromString("Select String Table: "))
+				]
+					
+				+SVerticalBox::Slot()
+				[
+					SNew(SObjectPropertyEntryBox)
+					.ThumbnailPool(UThumbnailManager::Get().GetSharedThumbnailPool())
+					.DisplayThumbnail(true)
+					.DisplayBrowse(true)
+					.EnableContentPicker(true)
+					.AllowedClass(UStringTable::StaticClass())
+					.ObjectPath(this, &SSubImpWindow::GetSelectedStringTablePath)
+					.OnObjectChanged(this, &SSubImpWindow::OnStringTableSelected)
+				]
+			]
+		]
+
+		+SVerticalBox::Slot()
+		.AutoHeight()
+		.Padding(0.0f, 5.0f)
+		.HAlign(HAlign_Fill)
+		.VAlign(VAlign_Top)
+		[
+			SNew(SHorizontalBox)
+			+SHorizontalBox::Slot()
+			.AutoWidth()
+			[
+				SNew(SCheckBox)
+				.OnCheckStateChanged(this, &SSubImpWindow::OnApplyEndSubTagStatChanged)
+				.IsChecked(this, &SSubImpWindow::GetApplyEndSubTagCheckBoxState)
+			]
+			+SHorizontalBox::Slot()
+			.FillWidth(1.0f)
+			[
+				SNew(STextBlock)
+				.Font(FAppStyle::Get().GetFontStyle("NormalFont"))
+				.Justification(ETextJustify::Left)
+				.Text(FText::FromString("Apply End Sub Tag?"))
+			]
+		]
+		
+		+SVerticalBox::Slot()
+		.AutoHeight()
+		.Padding(0.0f, 5.0f)
+		.HAlign(HAlign_Fill)
+		.VAlign(VAlign_Top)
+		[
+			SNew(SBorder)
+			.Visibility(this, &SSubImpWindow::GetEndSubTagSettingsVisibility)
+			.BorderImage(FAppStyle::Get().GetBrush("Brushes.Background"))
+			.Padding(5.0f, 0.0f, 5.0f, 5.0f)
+			[
+				SNew(SVerticalBox)
+				+SVerticalBox::Slot()
+				.AutoHeight()
+				.Padding(0.0f, 5.0f)
+				.HAlign(HAlign_Fill)
+				.VAlign(VAlign_Top)
+
+				+SVerticalBox::Slot()
+				.AutoHeight()
+				.Padding(0.0f, 5.0f)
+				.HAlign(HAlign_Fill)
+				.VAlign(VAlign_Top)
+				[
+					SNew(STextBlock)
+					.Font(FAppStyle::Get().GetFontStyle("NormalFont"))
+					.Justification(ETextJustify::Left)
+					.Text(FText::FromString("Sub Imp Tag Timeout (in seconds): "))
+					.ToolTipText(FText::FromString("Description"))
+				]
+
+				+SVerticalBox::Slot()
+				[
+					SNew(SSpinBox<float>)
+					.MinSliderValue(0.5f)
+					.Font(FAppStyle::Get().GetFontStyle("NormalFont"))
+					.Value(this, &SSubImpWindow::GetEndSubTagTimeout)
+					.OnValueCommitted(this, &SSubImpWindow::EndSubTagTimeoutNumericCommitted)
+				]
+
+				+SVerticalBox::Slot()
+				.AutoHeight()
+				.Padding(0.0f, 5.0f)
+				.HAlign(HAlign_Fill)
+				.VAlign(VAlign_Top)
+				[
+					SNew(STextBlock)
+					.Font(FAppStyle::Get().GetFontStyle("NormalFont"))
+					.Justification(ETextJustify::Left)
+					.Text(FText::FromString("Sub Imp Tag Type: "))
+					.ToolTipText(FText::FromString("Description"))
+				]
+
+				+SVerticalBox::Slot()
+				[
+					SNew(SEditableTextBox)
+					.IsReadOnly(false)
+					.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+					.Text(this, &SSubImpWindow::GetEndSubTag)
+					.OnTextCommitted(this, &SSubImpWindow::EndSubTagTextBlockCommitted)
+				]
+			]
+		]
+		
+		+SVerticalBox::Slot()
+		.AutoHeight()
+		.Padding(0.0f, 5.0f)
 		.HAlign(HAlign_Fill)
 		.VAlign(VAlign_Top)
 		[
@@ -146,104 +300,10 @@ FReply SSubImpWindow::OpenSRTFilePickerWindow()
 			ReadTextFiles);
 	}
 
-	//todo: move to func - GenerateSubtitleCueArrayFromString
-	// file read successfully, generate the subtitles
 	if (FoundFile && !ReadTextFiles.IsEmpty())
 	{
 		const FString FilePath = ReadTextFiles[0];
 		LoadedFileString = FilePath;
-
-		TArray<FString> LoadedText;
-		int SubtitleIndex = -1;
-		float CachedSubtitleEndTime = 0.0f;
-		FSubtitleCue SubtitleCue = FSubtitleCue();
-		
-		FFileHelper::LoadFileToStringArray(LoadedText, *FilePath);
-		const int LastIndex = LoadedText.Num() - 1;
-		
-		for (int i = 0; i <= LastIndex; i++)
-		{
-			FString Line = LoadedText[i];
-			ESubImpLineType LineType = ESubImpLineType::EmptyLine;
-			
-			if(!Line.IsEmpty())
-			{
-				bool bPushSubtitleCue = false;
-				
-				if(Line.IsNumeric())
-					LineType = ESubImpLineType::SubtitleIndex;
-				
-				if(Line.Contains(SUBTITLE_TIME_DELIMITER))
-					LineType = ESubImpLineType::SubtitleTime;
-
-				if(LineType == ESubImpLineType::EmptyLine)
-					LineType = ESubImpLineType::SubtitleText;
-
-				switch(LineType)
-				{
-				case ESubImpLineType::SubtitleIndex:
-				{
-					const int NewSubtitleIndex = FCString::Atoi(*Line);
-					if (NewSubtitleIndex > SubtitleIndex)
-					{
-						SubtitleIndex = NewSubtitleIndex;
-						bPushSubtitleCue = true;
-					}
-					break;
-				}
-				case ESubImpLineType::SubtitleTime:
-				{
-					FString LeftString, RightString;
-					Line.Split(SUBTITLE_TIME_DELIMITER, &LeftString, &RightString);
-
-					const float CurrentSubtitleStartTime = GetTotalSecondsFromTimespanString(LeftString);
-
-					if (CurrentSubtitleStartTime - CachedSubtitleEndTime >=EndSubTagTimeout)
-					{
-						FSubtitleCue EmptySubtitleCue = FSubtitleCue();
-						EmptySubtitleCue.Text = EndSubTag;
-						EmptySubtitleCue.Time = CachedSubtitleEndTime;
-					
-						GeneratedSubtitleInfo.Add(EmptySubtitleCue);
-					}
-					
-					SubtitleCue.Time = CurrentSubtitleStartTime;
-					CachedSubtitleEndTime = GetTotalSecondsFromTimespanString(RightString);
-					break;
-				}
-				case ESubImpLineType::SubtitleText:
-				{
-					if(SubtitleCue.Text.IsEmpty())
-					{
-						SubtitleCue.Text = FText::FromString(Line);
-					}
-					else
-					{
-						FString TextFormat = "{0}" + FString(LINE_TERMINATOR) + "{1}";
-						const FText CurrentSubtitleCue = SubtitleCue.Text;
-						const FText NewSubtitleCue = FText::FromString(Line);
-						SubtitleCue.Text = FText::Format(FText::FromString(TextFormat), CurrentSubtitleCue, NewSubtitleCue);
-					}
-					break;
-				}
-				default:
-					break;
-				}
-
-				// Force subtitle update, to ensure the final subs go into the array
-				if(i == LastIndex)
-					bPushSubtitleCue = true;
-
-				if(bPushSubtitleCue)
-				{
-					if(!SubtitleCue.Text.IsEmpty() && SubtitleCue.Time >= 0.0f)
-					{
-						GeneratedSubtitleInfo.Add(SubtitleCue);
-						SubtitleCue = FSubtitleCue();
-					}
-				}
-			}
-		}
 	}
 	
 	return FReply::Handled();
@@ -251,11 +311,10 @@ FReply SSubImpWindow::OpenSRTFilePickerWindow()
 
 FReply SSubImpWindow::DoTheSubImp()
 {
-	if(SelectedSoundWave == nullptr
-	|| GeneratedSubtitleInfo.IsEmpty()
-	|| !GEditor)
+	if(!GEditor)
 		return FReply::Handled();
-	
+
+	GenerateSubtitleCueArrayFromReadFile();
 	SelectedSoundWave->Subtitles = GeneratedSubtitleInfo;
 	
 	//Save asset
@@ -272,10 +331,135 @@ FReply SSubImpWindow::DoTheSubImp()
 
 void SSubImpWindow::ResetSubImp()
 {
-	LoadedFileString = "Choose File...";
+	LoadedFileString = OPEN_FILE_HINT_STRING;
 	GeneratedSubtitleInfo.Empty();
+	
 	SelectedSoundWave = nullptr;
 	SelectedSoundWavePath = FString();
+
+	bApplyEndSubTag = false;
+	bUseStringTableForSubtitles = false;
+	
+	SelectedStringTable = nullptr;
+	SelectedStringTablePath = FString();
+}
+
+void SSubImpWindow::GenerateSubtitleCueArrayFromReadFile()
+{
+	GeneratedSubtitleInfo.Empty();
+	
+	if(!IsLoadedPathStringValid())
+		return;
+	
+	TArray<FString> LoadedText;
+	int SubtitleIndex = -1;
+	float CachedSubtitleEndTime = 0.0f;
+	FSubtitleCue SubtitleCue = FSubtitleCue();
+	
+	FFileHelper::LoadFileToStringArray(LoadedText, *LoadedFileString);
+	const int LastIndex = LoadedText.Num() - 1;
+	
+	for (int i = 0; i <= LastIndex; i++)
+	{
+		FString Line = LoadedText[i];
+		ESubImpLineType LineType = ESubImpLineType::EmptyLine;
+		
+		if(!Line.IsEmpty())
+		{
+			bool bPushSubtitleCue = false;
+			
+			if(Line.IsNumeric())
+				LineType = ESubImpLineType::SubtitleIndex;
+			
+			if(Line.Contains(SUBTITLE_TIME_DELIMITER))
+				LineType = ESubImpLineType::SubtitleTime;
+
+			if(LineType == ESubImpLineType::EmptyLine)
+				LineType = ESubImpLineType::SubtitleText;
+
+			switch(LineType)
+			{
+			case ESubImpLineType::SubtitleIndex:
+			{
+				const int NewSubtitleIndex = FCString::Atoi(*Line);
+				if (NewSubtitleIndex > SubtitleIndex)
+				{
+					SubtitleIndex = NewSubtitleIndex;
+					bPushSubtitleCue = true;
+				}
+				break;
+			}
+			case ESubImpLineType::SubtitleTime:
+			{
+				FString LeftString, RightString;
+				Line.Split(SUBTITLE_TIME_DELIMITER, &LeftString, &RightString);
+
+				const float CurrentSubtitleStartTime = GetTotalSecondsFromTimespanString(LeftString);
+
+				if (bApplyEndSubTag
+				&& (CurrentSubtitleStartTime - CachedSubtitleEndTime) >= GetEndSubTagTimeout())
+				{
+					FSubtitleCue EmptySubtitleCue = FSubtitleCue();
+					EmptySubtitleCue.Text = GetEndSubTag();
+					EmptySubtitleCue.Time = CachedSubtitleEndTime;
+				
+					GeneratedSubtitleInfo.Add(EmptySubtitleCue);
+				}
+				
+				SubtitleCue.Time = CurrentSubtitleStartTime;
+				CachedSubtitleEndTime = GetTotalSecondsFromTimespanString(RightString);
+				break;
+			}
+			case ESubImpLineType::SubtitleText:
+			{
+				if(bUseStringTableForSubtitles)
+				{
+					FText SubtitleText = FText::FromString("MISSING STRING TABLE ENTRY");
+					
+					if(SelectedStringTable != nullptr)
+					{
+						const FName TableId = SelectedStringTable->GetStringTableId();
+						if(TableId.IsValid())
+						{
+							SubtitleText = FText::FromStringTable(TableId, Line);
+						}
+					}
+					
+					SubtitleCue.Text = SubtitleText;
+					break;
+				}
+					
+				if(SubtitleCue.Text.IsEmpty())
+				{
+					SubtitleCue.Text = FText::FromString(Line);
+				}
+				else
+				{
+					FString TextFormat = "{0}" + FString(LINE_TERMINATOR) + "{1}";
+					const FText CurrentSubtitleCue = SubtitleCue.Text;
+					const FText NewSubtitleCue = FText::FromString(Line);
+					SubtitleCue.Text = FText::Format(FText::FromString(TextFormat), CurrentSubtitleCue, NewSubtitleCue);
+				}
+				break;
+			}
+			default:
+				break;
+			}
+
+			// Force subtitle update, to ensure the final subs go into the array
+			if(i == LastIndex)
+				bPushSubtitleCue = true;
+
+			if(bPushSubtitleCue)
+			{
+				if(!SubtitleCue.Text.IsEmpty() && SubtitleCue.Time >= 0.0f)
+				{
+					GeneratedSubtitleInfo.Add(SubtitleCue);
+					SubtitleCue = FSubtitleCue();
+				}
+			}
+		}
+	}
 }
 
 void SSubImpWindow::OnSoundWaveSelected(const FAssetData& InSoundWave)
@@ -296,7 +480,12 @@ void SSubImpWindow::OnSoundWaveSelected(const FAssetData& InSoundWave)
 
 bool SSubImpWindow::GetIsGenerateButtonEnabled() const
 {
-	return (SelectedSoundWave != nullptr) && !GeneratedSubtitleInfo.IsEmpty();
+	return (SelectedSoundWave != nullptr) && IsLoadedPathStringValid();
+}
+
+bool SSubImpWindow::IsLoadedPathStringValid() const
+{
+	return !(LoadedFileString.Equals(OPEN_FILE_HINT_STRING, ESearchCase::IgnoreCase) || LoadedFileString.IsEmpty());
 }
 
 FText SSubImpWindow::GetLoadedFileStringAsText() const
@@ -307,6 +496,75 @@ FText SSubImpWindow::GetLoadedFileStringAsText() const
 FString SSubImpWindow::GetSelectedSoundWavePath() const
 {
 	return SelectedSoundWavePath;
+}
+
+void SSubImpWindow::OnStringTableSelected(const FAssetData& InStringTable)
+{
+	if(InStringTable.IsValid())
+	{
+		UStringTable* StringTable = reinterpret_cast<UStringTable*>(InStringTable.GetAsset());
+
+		if(StringTable == nullptr)
+			return;
+
+		SelectedStringTable = StringTable;
+		SelectedStringTablePath = InStringTable.GetObjectPathString();
+	}
+}
+
+FString SSubImpWindow::GetSelectedStringTablePath() const
+{
+	return SelectedStringTablePath;
+}
+
+void SSubImpWindow::OnStringTableCheckboxStateChanged(ECheckBoxState bIsChecked)
+{
+	bUseStringTableForSubtitles = (bIsChecked == ECheckBoxState::Checked);
+}
+
+ECheckBoxState SSubImpWindow::GetStringTableCheckBoxState() const
+{
+	return bUseStringTableForSubtitles ? ECheckBoxState::Checked : ECheckBoxState::Unchecked;
+}
+
+EVisibility SSubImpWindow::GetStringTableSettingsVisibility() const
+{
+	return bUseStringTableForSubtitles ? EVisibility::SelfHitTestInvisible : EVisibility::Collapsed;
+}
+
+void SSubImpWindow::OnApplyEndSubTagStatChanged(ECheckBoxState bIsChecked)
+{
+	bApplyEndSubTag = (bIsChecked == ECheckBoxState::Checked);
+}
+
+ECheckBoxState SSubImpWindow::GetApplyEndSubTagCheckBoxState() const
+{
+	return bApplyEndSubTag ? ECheckBoxState::Checked : ECheckBoxState::Unchecked; 
+}
+
+EVisibility SSubImpWindow::GetEndSubTagSettingsVisibility() const
+{
+	return bApplyEndSubTag ? EVisibility::SelfHitTestInvisible : EVisibility::Collapsed;
+}
+
+void SSubImpWindow::EndSubTagTextBlockCommitted(const FText& Text, ETextCommit::Type CommitType)
+{
+	EndSubTag = Text;
+}
+
+FText SSubImpWindow::GetEndSubTag() const
+{
+	return EndSubTag;
+}
+
+void SSubImpWindow::EndSubTagTimeoutNumericCommitted(float Value, ETextCommit::Type CommitType)
+{
+	EndSubTagTimeout = FMath::Max(0.5f, Value);
+}
+
+float SSubImpWindow::GetEndSubTagTimeout() const
+{
+	return EndSubTagTimeout;
 }
 
 float SSubImpWindow::GetTotalSecondsFromTimespanString(const FString& TimespanString) const
@@ -350,7 +608,7 @@ float SSubImpWindow::GetTotalSecondsFromTimespanString(const FString& TimespanSt
 
 ///////////////////////////////////////////////////////////////////////////
 
-#define WINDOW_SIZE FVector2D(350.0f, 300.0f)
+#define WINDOW_SIZE FVector2D(350.0f, 550.0f)
 #define MIN_MOUSE_OFFSET 15.0f
 
 void OpenSubImpWindow(TSharedPtr<SWindow> ParentWindow)
@@ -367,7 +625,7 @@ void OpenSubImpWindow(TSharedPtr<SWindow> ParentWindow)
 		.AutoCenter(EAutoCenter::None)
 		.SupportsMaximize(false)
 		.SupportsMinimize(false)
-		.SizingRule(ESizingRule::FixedSize)
+		.SizingRule(ESizingRule::Autosized)
 		.ClientSize(WINDOW_SIZE)
 		.HasCloseButton(true)
 		.Title(FText::FromString("sub-imp"))
