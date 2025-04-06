@@ -14,6 +14,9 @@ static void CloseSubImpWindow();
 
 #define OPEN_FILE_HINT_STRING FString("Choose subtitles file...")
 
+#define END_SUB_DEFAULT_TAG FText::FromString("END_SUB")
+#define END_SUB_MINIMUM_TIMEOUT 0.5f
+
 enum ESubImpLineType
 {
 	EmptyLine		= 0,
@@ -78,9 +81,9 @@ private:
 	UStringTable* SelectedStringTable;
 	FString SelectedStringTablePath;
 
-	bool bApplyEndSubTag = false;
-	float EndSubTagTimeout = 3.0f;
-	FText EndSubTag = FText::FromString("NO_SUB");
+	bool bApplyEndSubTag;
+	float EndSubTagTimeout;
+	FText EndSubTag;
 
 	void ResetSubImp();
 	void GenerateSubtitleCueArrayFromReadFile();

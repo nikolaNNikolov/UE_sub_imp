@@ -357,6 +357,9 @@ void SSubImpWindow::ResetSubImp()
 
 	bApplyEndSubTag = false;
 	bUseStringTableForSubtitles = false;
+
+	EndSubTag = END_SUB_DEFAULT_TAG;
+	EndSubTagTimeout = END_SUB_MINIMUM_TIMEOUT;
 	
 	SelectedStringTable = nullptr;
 	SelectedStringTablePath = FString();
@@ -586,7 +589,7 @@ FText SSubImpWindow::GetEndSubTag() const
 
 void SSubImpWindow::EndSubTagTimeoutNumericCommitted(float Value, ETextCommit::Type CommitType)
 {
-	EndSubTagTimeout = FMath::Max(0.5f, Value);
+	EndSubTagTimeout = FMath::Max(END_SUB_MINIMUM_TIMEOUT, Value);
 }
 
 float SSubImpWindow::GetEndSubTagTimeout() const
