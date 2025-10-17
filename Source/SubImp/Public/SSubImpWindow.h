@@ -1,9 +1,9 @@
 ﻿//Sub_Imp Plugin
 #pragma once
 
+#include "Sound/SoundWave.h"
+
 static TWeakPtr<SWindow> CurrentSubImpWindow;
-static void OpenSubImpWindow(TSharedPtr<SWindow> ParentWindow);
-static void CloseSubImpWindow();
 
 #define TIMESPAN_DELIMITER TEXT(":")
 #define SUBTITLE_TIME_DELIMITER TEXT("-->")
@@ -14,8 +14,11 @@ static void CloseSubImpWindow();
 
 #define OPEN_FILE_HINT_STRING FString("Choose subtitles file...")
 
-#define END_SUB_DEFAULT_TAG FText::FromString("END_SUB")
-#define END_SUB_MINIMUM_TIMEOUT 0.5f
+//TODO: Migrate these to static values, as well as srt and audio file, don't close sub-imp after use
+#define END_SUB_DEFAULT_TAG FText::FromString("NO_SUB")
+#define END_SUB_MINIMUM_TIMEOUT 3.0f
+
+
 
 enum ESubImpLineType
 {
@@ -91,3 +94,57 @@ private:
 	float GetTotalSecondsFromTimespanString(const FString& TimespanString) const;
 	
 };
+
+
+#define WINDOW_SIZE FVector2D(350.0f, 550.0f)
+#define MIN_MOUSE_OFFSET 15.0f
+
+static void CloseSubImpWindow()
+{
+	if(CurrentSubImpWindow.IsValid())
+	{
+		CurrentSubImpWindow.Pin()->RequestDestroyWindow();
+		CurrentSubImpWindow.Reset();
+	}
+}
+
+static void OpenSubImpWindow(TSharedPtr<SWindow> ParentWindow)
+{
+	CloseSubImpWindow();
+
+	const FVector2D CursorPosition = FSlateApplication::Get().GetCursorPos();
+	const FSlateRect CursorAnchor (CursorPosition.X - WINDOW_SIZE.X/2, CursorPosition.Y + MIN_MOUSE_OFFSET,
+		CursorPosition.X - WINDOW_SIZE.X/2, CursorPosition.Y + MIN_MOUSE_OFFSET);
+	const FVector2D SpawnLocation = FSlateApplication::Get().CalculatePopupWindowPosition(CursorAnchor, WINDOW_SIZE);
+
+	TSharedPtr<SWindow> Window = SNew(SWindow)
+		.ScreenPosition(SpawnLocation)
+		.AutoCenter(EAutoCenter::None)
+		.SupportsMaximize(false)
+		.SupportsMinimize(true)
+		.SizingRule(ESizingRule::Autosized)
+		.ClientSize(WINDOW_SIZE)
+		.HasCloseButton(true)
+		.Title(FText::FromString("sub-imp"))
+		[
+			SNew(SBorder)
+			.BorderImage(FAppStyle::Get().GetBrush("Brushes.Panel"))
+			.Padding(FMargin(8.0f))
+			[
+				SNew(SSubImpWindow)
+				.ParentWindow(ParentWindow)
+			]
+		];
+
+	if (ParentWindow.IsValid())
+	{
+		Window = FSlateApplication::Get().AddWindowAsNativeChild(Window.ToSharedRef(), ParentWindow.ToSharedRef());
+	}
+	else
+	{
+		Window = FSlateApplication::Get().AddWindow(Window.ToSharedRef());
+	}
+	
+	CurrentSubImpWindow = Window;
+	
+}

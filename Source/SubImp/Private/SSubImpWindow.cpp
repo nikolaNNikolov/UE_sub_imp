@@ -7,6 +7,8 @@
 #include "Components/SlateWrapperTypes.h"
 #include "Interfaces/IMainFrameModule.h"
 #include "Internationalization/StringTable.h"
+#include "Internationalization/StringTableCore.h"
+#include "Misc/FileHelper.h"
 #include "Subsystems/EditorAssetSubsystem.h"
 #include "ThumbnailRendering/ThumbnailManager.h"
 #include "Widgets/Input/SNumericEntryBox.h"
@@ -334,7 +336,12 @@ FReply SSubImpWindow::DoTheSubImp()
 
 	GenerateSubtitleCueArrayFromReadFile();
 	SelectedSoundWave->Subtitles = GeneratedSubtitleInfo;
-	
+
+	//todo: checkbox?
+	SelectedSoundWave->bManualWordWrap = true;
+	SelectedSoundWave->bSingleLine = true;
+
+	//todo: does this work?
 	//Save asset
 	UEditorAssetSubsystem* EditorAssetSubsystem = GEditor->GetEditorSubsystem<UEditorAssetSubsystem>();
 	if(EditorAssetSubsystem->SaveAsset(SelectedSoundWavePath, true))
@@ -349,6 +356,8 @@ FReply SSubImpWindow::DoTheSubImp()
 
 void SSubImpWindow::ResetSubImp()
 {
+	//todo: these defines can probably woul be better as statics
+	
 	LoadedFileString = OPEN_FILE_HINT_STRING;
 	GeneratedSubtitleInfo.Empty();
 	
@@ -385,10 +394,10 @@ void SSubImpWindow::GenerateSubtitleCueArrayFromReadFile()
 		FString Line = LoadedText[i];
 		ESubImpLineType LineType = ESubImpLineType::EmptyLine;
 		
+		bool bPushSubtitleCue = false;
+		
 		if(!Line.IsEmpty())
 		{
-			bool bPushSubtitleCue = false;
-			
 			if(Line.IsNumeric())
 				LineType = ESubImpLineType::SubtitleIndex;
 			
@@ -436,7 +445,7 @@ void SSubImpWindow::GenerateSubtitleCueArrayFromReadFile()
 			{
 				if(bUseStringTableForSubtitles)
 				{
-					FText SubtitleText = FText::FromString("MISSING STRING TABLE ENTRY");
+					FText SubtitleText = FText::FromString(FStringTableEntry::GetPlaceholderSourceString());
 					
 					if(SelectedStringTable != nullptr)
 					{
@@ -444,6 +453,12 @@ void SSubImpWindow::GenerateSubtitleCueArrayFromReadFile()
 						if(TableId.IsValid())
 						{
 							SubtitleText = FText::FromStringTable(TableId, Line);
+						}
+						
+						//ugly hackerii for cert
+						if (SubtitleText.EqualTo(FText::FromString(FStringTableEntry::GetPlaceholderSourceString())))
+						{
+							SubtitleText = FText::GetEmpty();
 						}
 					}
 					
@@ -467,18 +482,18 @@ void SSubImpWindow::GenerateSubtitleCueArrayFromReadFile()
 			default:
 				break;
 			}
+		}
 
-			// Force subtitle update, to ensure the final subs go into the array
-			if(i == LastIndex)
-				bPushSubtitleCue = true;
+		// Force subtitle update, to ensure the final subs go into the array
+		if(i == LastIndex)
+			bPushSubtitleCue = true;
 
-			if(bPushSubtitleCue)
+		if(bPushSubtitleCue)
+		{
+			if(!SubtitleCue.Text.IsEmpty() && SubtitleCue.Time >= 0.0f)
 			{
-				if(!SubtitleCue.Text.IsEmpty() && SubtitleCue.Time >= 0.0f)
-				{
-					GeneratedSubtitleInfo.Add(SubtitleCue);
-					SubtitleCue = FSubtitleCue();
-				}
+				GeneratedSubtitleInfo.Add(SubtitleCue);
+				SubtitleCue = FSubtitleCue();
 			}
 		}
 	}
@@ -603,6 +618,8 @@ float SSubImpWindow::GetTotalSecondsFromTimespanString(const FString& TimespanSt
 	int TimespanHours = 0;
 	int TimespanMinutes = 0;
 	int TimespanSeconds = 0;
+	int TimespanMilliSeconds = 0;
+	float MillisecondsAsRemainder = 0.0f;
 
 	TimespanString.ParseIntoArray(InternalTimespanStrings, TIMESPAN_DELIMITER);
 
@@ -626,70 +643,27 @@ float SSubImpWindow::GetTotalSecondsFromTimespanString(const FString& TimespanSt
 				FString LeftSecondsString, RightSecondsString;
 				CurrentIndex.Split(TEXT(","), &LeftSecondsString, &RightSecondsString);
 				TimespanSeconds = FCString::Atoi(*LeftSecondsString);
+
+				//RightSecondsString = "0." + RightSecondsString;
+				TimespanMilliSeconds = FCString::Atoi(*RightSecondsString);
+
+				//	Divide the read milliseconds by ten to the power of the length of string,
+				//	e.g. a read value of "444" should equal 0.444f (444/10^3)
+				float PowerOfValue = FMath::Pow(10.0f, RightSecondsString.Len());
+				MillisecondsAsRemainder = TimespanMilliSeconds / 1000.f;
 				break;
 			}
 		default:
 			break;
 		}
 	}
-	
-	return FTimespan(TimespanHours, TimespanMinutes, TimespanSeconds).GetTotalSeconds();
+
+	return FTimespan(TimespanHours, TimespanMinutes, TimespanSeconds).GetTotalSeconds() + MillisecondsAsRemainder;
 }
 
 ///////////////////////////////////////////////////////////////////////////
 
-#define WINDOW_SIZE FVector2D(350.0f, 550.0f)
-#define MIN_MOUSE_OFFSET 15.0f
 
-void OpenSubImpWindow(TSharedPtr<SWindow> ParentWindow)
-{
-	CloseSubImpWindow();
-
-	const FVector2D CursorPosition = FSlateApplication::Get().GetCursorPos();
-	const FSlateRect CursorAnchor (CursorPosition.X - WINDOW_SIZE.X/2, CursorPosition.Y + MIN_MOUSE_OFFSET,
-		CursorPosition.X - WINDOW_SIZE.X/2, CursorPosition.Y + MIN_MOUSE_OFFSET);
-	const FVector2D SpawnLocation = FSlateApplication::Get().CalculatePopupWindowPosition(CursorAnchor, WINDOW_SIZE);
-
-	TSharedPtr<SWindow> Window = SNew(SWindow)
-		.ScreenPosition(SpawnLocation)
-		.AutoCenter(EAutoCenter::None)
-		.SupportsMaximize(false)
-		.SupportsMinimize(true)
-		.SizingRule(ESizingRule::Autosized)
-		.ClientSize(WINDOW_SIZE)
-		.HasCloseButton(true)
-		.Title(FText::FromString("sub-imp"))
-		[
-			SNew(SBorder)
-			.BorderImage(FAppStyle::Get().GetBrush("Brushes.Panel"))
-			.Padding(FMargin(8.0f))
-			[
-				SNew(SSubImpWindow)
-				.ParentWindow(ParentWindow)
-			]
-		];
-
-	if (ParentWindow.IsValid())
-	{
-		Window = FSlateApplication::Get().AddWindowAsNativeChild(Window.ToSharedRef(), ParentWindow.ToSharedRef());
-	}
-	else
-	{
-		Window = FSlateApplication::Get().AddWindow(Window.ToSharedRef());
-	}
-	
-	CurrentSubImpWindow = Window;
-	
-}
-
-void CloseSubImpWindow()
-{
-	if(CurrentSubImpWindow.IsValid())
-	{
-		CurrentSubImpWindow.Pin()->RequestDestroyWindow();
-		CurrentSubImpWindow.Reset();
-	}
-}
 
 ///////////////////////////////////////////////////////////////////////////
 
