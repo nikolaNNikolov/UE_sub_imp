@@ -59,17 +59,17 @@ void FSubImpModule::RegisterMenus()
 	FToolMenuOwnerScoped OwnerScoped(this);
 
 	{
-		UToolMenu* Menu = UToolMenus::Get()->ExtendMenu("LevelEditor.MainMenu.Window");
+		UToolMenu* Menu = UToolMenus::Get()->ExtendMenu("LevelEditor.MainMenu.Tools");
 		{
-			FToolMenuSection& Section = Menu->FindOrAddSection("sub-imp");
+			FToolMenuSection& Section = Menu->FindOrAddSection("Tools");
 			Section.AddMenuEntryWithCommandList(FSubImpCommands::Get().PluginAction, PluginCommands);
 		}
 	}
 
 	{
-		UToolMenu* ToolbarMenu = UToolMenus::Get()->ExtendMenu("LevelEditor.LevelEditorToolBar.PlayToolBar");
+		UToolMenu* ToolbarMenu = UToolMenus::Get()->ExtendMenu("LevelEditor.SecondaryToolbar");
 		{
-			FToolMenuSection& Section = ToolbarMenu->FindOrAddSection("PluginTools");
+			FToolMenuSection& Section = ToolbarMenu->FindOrAddSection("Tools");
 			{
 				FToolMenuEntry& Entry = Section.AddEntry(FToolMenuEntry::InitToolBarButton(FSubImpCommands::Get().PluginAction));
 				Entry.SetCommandList(PluginCommands);

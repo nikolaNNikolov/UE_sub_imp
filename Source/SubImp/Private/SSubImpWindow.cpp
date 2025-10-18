@@ -618,11 +618,15 @@ float SSubImpWindow::GetTotalSecondsFromTimespanString(const FString& TimespanSt
 	int TimespanHours = 0;
 	int TimespanMinutes = 0;
 	int TimespanSeconds = 0;
-	int TimespanMilliSeconds = 0;
 	float MillisecondsAsRemainder = 0.0f;
 
 	TimespanString.ParseIntoArray(InternalTimespanStrings, TIMESPAN_DELIMITER);
 
+	//**************************************
+	// time format being read here is:
+	// Hours:Minutes:Second,Milliseconds
+	//**************************************
+	
 	for (int i = 0; i <= InternalTimespanStrings.Num() - 1; i++)
 	{
 		FString CurrentIndex = InternalTimespanStrings[i];
@@ -642,14 +646,10 @@ float SSubImpWindow::GetTotalSecondsFromTimespanString(const FString& TimespanSt
 			{
 				FString LeftSecondsString, RightSecondsString;
 				CurrentIndex.Split(TEXT(","), &LeftSecondsString, &RightSecondsString);
+				
 				TimespanSeconds = FCString::Atoi(*LeftSecondsString);
-
-				//RightSecondsString = "0." + RightSecondsString;
-				TimespanMilliSeconds = FCString::Atoi(*RightSecondsString);
-
-				//	Divide the read milliseconds by ten to the power of the length of string,
-				//	e.g. a read value of "444" should equal 0.444f (444/10^3)
-				float PowerOfValue = FMath::Pow(10.0f, RightSecondsString.Len());
+				const int TimespanMilliSeconds = FCString::Atoi(*RightSecondsString);
+				
 				MillisecondsAsRemainder = TimespanMilliSeconds / 1000.f;
 				break;
 			}
@@ -660,10 +660,3 @@ float SSubImpWindow::GetTotalSecondsFromTimespanString(const FString& TimespanSt
 
 	return FTimespan(TimespanHours, TimespanMinutes, TimespanSeconds).GetTotalSeconds() + MillisecondsAsRemainder;
 }
-
-///////////////////////////////////////////////////////////////////////////
-
-
-
-///////////////////////////////////////////////////////////////////////////
-

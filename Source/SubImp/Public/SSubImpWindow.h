@@ -113,8 +113,8 @@ static void OpenSubImpWindow(TSharedPtr<SWindow> ParentWindow)
 	CloseSubImpWindow();
 
 	const FVector2D CursorPosition = FSlateApplication::Get().GetCursorPos();
-	const FSlateRect CursorAnchor (CursorPosition.X - WINDOW_SIZE.X/2, CursorPosition.Y + MIN_MOUSE_OFFSET,
-		CursorPosition.X - WINDOW_SIZE.X/2, CursorPosition.Y + MIN_MOUSE_OFFSET);
+	const FSlateRect CursorAnchor (CursorPosition.X /*+ WINDOW_SIZE.X/2*/, CursorPosition.Y + MIN_MOUSE_OFFSET,
+		CursorPosition.X /* + WINDOW_SIZE.X/2*/, CursorPosition.Y + MIN_MOUSE_OFFSET);
 	const FVector2D SpawnLocation = FSlateApplication::Get().CalculatePopupWindowPosition(CursorAnchor, WINDOW_SIZE);
 
 	TSharedPtr<SWindow> Window = SNew(SWindow)
