@@ -24,7 +24,9 @@ SSubImpWindow::SSubImpWindow()
 
 void SSubImpWindow::Construct(const FArguments& InArgs)
 {
-	//todo: all logging feedback
+	//todo: add at the bottom "(v)Subtitle Import Complete" text
+	//todo: (cont) (in green, with tick icon preferable, take the one from the Level Auditor)
+	
 	ResetSubImp();
 	ParentWindow = InArgs._ParentWindow;
 	
